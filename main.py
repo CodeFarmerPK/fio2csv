@@ -5,7 +5,6 @@ n2mSec = ["nsec", 1000000]
 u2mSec = ["usec", 1000]
 kb2mb = ["kB/s", 1024]
 fioFilePath = "C:\\Users\\PanKai\\Desktop\\testlog\\data_pool_out_of_cache"
-csvDirName = "csv"
 
 
 # get fio log file paths in directory
@@ -50,49 +49,47 @@ def getCsvLine(resList, fioLines):
             readIOPS = line.split(",")[0].split("=")[1]
             if "k" in readIOPS:
                 readIOPS = float(readIOPS[:-1]) * 1000
-            resList[0] = readIOPS
+            resList[1] = readIOPS
 
         if "clat (" in line:
-            resList[1] = getAvgLat(line)
+            resList[2] = getAvgLat(line)
 
         if "READ: bw=" in line:
-            resList[2] = getBW(line)
+            resList[3] = getBW(line)
 
     for line in fioLines:
         if "write: IOPS=" in line:
             writeIOPS = line.split(",")[0].split("=")[1]
             if "k" in writeIOPS:
                 writeIOPS = float(writeIOPS[:-1]) * 1000
-            resList[3] = writeIOPS
+            resList[4] = writeIOPS
 
         if "clat (" in line:
-            resList[4] = getAvgLat(line)
+            resList[5] = getAvgLat(line)
 
         if "WRITE: bw=" in line:
-            resList[5] = getBW(line)
+            resList[6] = getBW(line)
 
-    if int(resList[0]) == 0 and int(resList[2]) == 0:
-        resList[1] = 0
-    if int(resList[3]) == 0 and int(resList[5]) == 0:
-        resList[4] = 0
+    if int(resList[1]) == 0 and int(resList[3]) == 0:
+        resList[2] = 0
+    if int(resList[4]) == 0 and int(resList[6]) == 0:
+        resList[5] = 0
     csvLine = ""
     for item in resList:
         csvLine = csvLine + str(item) + ","
     return csvLine[:-1]
 
 
-def writeToCSV(path, sourceFilePath):
-    csvName = sourceFilePath[sourceFilePath.rfind("\\") + 1:].split(".")[0] + ".csv"
-    csvFilePath = path + "\\" + csvName
+def writeToCSV(path, sourceFilePathList):
+    csvFilePath = path + "\\" + "test.csv"
     csvFile = open(csvFilePath, "w")
-    emptyResList = [0, 0, 0, 0, 0, 0]
-    csvFile.write(getCsvLine(emptyResList, readLines(sourceFilePath)))
+    for sourceFilePath in sourceFilePathList:
+        testCaseName = sourceFilePath[sourceFilePath.rfind("\\") + 1:].split(".")[0]
+        emptyResList = [testCaseName, 0, 0, 0, 0, 0, 0]
+        csvFile.write(getCsvLine(emptyResList, readLines(sourceFilePath)))
+        csvFile.write("\n")
     csvFile.close()
 
 
 if __name__ == '__main__':
-    csvPath = fioFilePath + "\\" + csvDirName
-    if not os.path.exists(csvPath):
-        os.makedirs(csvPath)
-    for logPath in getFioLogPathList(fioFilePath):
-        writeToCSV(csvPath, logPath)
+    writeToCSV(fioFilePath, getFioLogPathList(fioFilePath))
